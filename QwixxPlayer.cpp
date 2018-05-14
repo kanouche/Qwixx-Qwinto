@@ -1,0 +1,93 @@
+#include "QwixxPlayer.h"
+
+QwixxPlayer::QwixxPlayer(std::string _name) : Player( new QwixxScoreSheet(_name) ) {}
+
+QwixxPlayer::~QwixxPlayer() { delete d_ScoreSheet; }
+
+RollOfDice QwixxPlayer::inputBeforeRoll(RollOfDice& _roll)
+{
+    d_active = true;
+    
+    std::cout << "Which dice would you like to roll?" << std::endl;
+    std::cout << "(Seperate each dice by a space ex: red blue): " <<std::endl;
+
+	std::vector<Color> dice_colors = get_color_index_vect(std::cin);    
+    
+    RollOfDice rd;
+    rd.push_back(_roll[4]);
+    rd.push_back(_roll[5]);
+    for(auto color : dice_colors)
+        rd.push_back(_roll[convert_to_index(color)]);
+
+    return rd;
+}
+
+
+void QwixxPlayer::inputAfterRoll(RollOfDice& _roll)
+{
+    std::cout << _roll;
+    std::cout << *d_ScoreSheet;
+    
+    if(!d_active)
+    {
+        char answer;
+        std::cout << "Would you like to score this roll? [y/n] ";
+        std::cin >> answer;
+		std::cin.ignore(256, '\n');
+        if(answer == 'n')
+            return;
+    }
+    
+    for (int i = 0; i < 2; ++i)
+    {
+        Color color;
+        int index;
+        
+        std::cout << "What row would you like to score the roll in? (enter color) ";
+
+		color = get_color_index_vect(std::cin)[0];
+        
+        std::cout << "What column (index) do you want to score in?" << std::endl;
+        std::cout << "(count from beginning of the chosen row) ";
+        std::cin >> index;
+		std::cin.ignore(256, '\n');
+        
+        if(d_ScoreSheet->score(_roll, color, index-1))
+            return;
+        
+        else
+        {
+            std::cout << "That is not a valid location please try another" << std::endl;
+            if(d_active)
+                std::cout << "(last try before being marked as failed throw)" << std::endl;
+        }
+    }
+    
+    if(d_active)
+        d_ScoreSheet->addFailedThrow();
+    d_active = false;
+
+}
+
+//TODO: rework the RollOfDice to get by color instead of index
+int QwixxPlayer::convert_to_index(Color _color)
+{
+
+	if(_color == Color::RED)
+		return 0;
+
+	else if(_color == Color::YELLOW)
+		return 1;
+
+	else if(_color == Color::GREEN)
+		return 2;
+
+	else if(_color == Color::BLUE)
+		return 3;
+
+	else if(_color == Color::WHITE)
+		return 4;
+
+    else
+        return 0;
+}
